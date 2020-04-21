@@ -25,7 +25,39 @@ function processDataForFrontEnd(req, res) {
   // Note that at no point do you "return" anything from this function -
   // it instead handles returning data to your front end at line 34.
   fetch(baseURL)
-    .then((r) => r.json())
+    .then((results) => results.json())
+    .then((data) => {
+      console.log(data);
+      const clearEmptyData = data.filter((f) => f.geocoded_column_1);
+      const refined = clearEmptyData.map((m) => ({
+        category: m.category,
+        name: m.name,
+        latLong: m.geocoded_column_1.coordinates
+      }));
+      // return data; // <- this will pass the data to the next "then" statement when I'm ready.
+      return refined;
+    })
+    .then((data) => data.reduce((c, current) => {
+      if (!c[current.category]) {
+        c[current.category] = [];
+      }
+      c[current.category].push(current);
+      return c;
+    }, {}))
+    .then((data) => {
+      // here I'm going to change the data into a format expected by the chart
+      console.log('new data', data);
+
+      const reformattedData = Object.entries(data).map((m, i) => {
+        console.log(m);
+        return {
+          y: m[1].length,
+          label: m[0] // this is a value from the chart example
+        };
+      });
+
+      return reformattedData;
+    })
     .then((data) => {
       console.log(data);
       res.send({ data: data }); // here's where we return data to the front end
